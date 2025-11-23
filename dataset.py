@@ -76,7 +76,7 @@ class Dataset:
         print(f"{end - start:.5f} sec")
         
         self.train = False
-        self.augment_prob = augment_prob  # 数据增强概率
+        self.augment_prob = augment_prob  # 随机掩码概率
         self.augment_methods = [
             self._random_edge_dropout,
             self._feature_noise_injection,
@@ -92,7 +92,7 @@ class Dataset:
         with open("./datasets/datasets.pkl", "rb") as f:
             loaded_tensor = pickle.load(f)
 
-        #half_length = int(len(loaded_tensor['tbga']) * 0.9)
+        #half_length = int(len(loaded_tensor['tbga']) * 0.5)
         half_length = len(loaded_tensor['tbga'])
         self.df_tbga = loaded_tensor['tbga'][:half_length]
         self.gene_gene_adj = loaded_tensor['gene_gene'][:half_length]
@@ -296,7 +296,7 @@ class Dataset:
             'hyperedges_tbga': self.hyperedges_tbga
         }
         
-        if self.train:  # 只在训练时应用数据增强
+        if self.train:  # 只在训练时应用随即掩码
             data = self._apply_augmentation(data)
             
         return {
@@ -305,17 +305,17 @@ class Dataset:
         }
     
     def _random_edge_dropout(self, adj_matrix, drop_rate=0.1):
-        """随机边丢弃增强"""
+        """随机边丢弃"""
         mask = torch.rand_like(adj_matrix) > drop_rate
         return adj_matrix * mask.float()
     
     def _feature_noise_injection(self, features, noise_scale=0.05):
-        """特征噪声注入增强"""
+        """特征噪声注入"""
         noise = torch.randn_like(features) * noise_scale
         return features + noise
     
     def _random_hyperedge_swap(self, hyperedges, swap_rate=0.1):
-        """超边随机交换增强"""
+        """超边随机交换"""
         for edge in hyperedges:
             if random.random() < swap_rate:
                 nodes = list(hyperedges[edge])
@@ -326,7 +326,7 @@ class Dataset:
         return hyperedges
     
     def _apply_augmentation(self, data):
-        """应用随机数据增强"""
+        """应用随机数据"""
         if random.random() < self.augment_prob:
             augment_fn = random.choice(self.augment_methods)
             if augment_fn == self._random_edge_dropout:
